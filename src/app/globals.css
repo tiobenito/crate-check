@@ -1,0 +1,580 @@
+@import "tailwindcss";
+
+/* ========================================
+   CSS CUSTOM PROPERTIES
+   ======================================== */
+:root {
+  --bg: #FDF6E3;
+  --card: #F5EDD8;
+  --border: #E8DCC8;
+  --leather: #C4A882;
+  --terracotta: #CC5500;
+  --bright: #E06B1F;
+  --text: #2C1810;
+  --text2: #3D2B1A;
+  --muted: #5C4033;
+  --muted2: #8B7355;
+  --demand-high: #2E7D32;
+  --demand-good: #1565C0;
+  --demand-medium: #D4A017;
+  --demand-low: #C62828;
+  --sidebar-bg: #F0E8D4;
+  --sidebar-width: 340px;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-leather: var(--leather);
+  --color-terracotta: var(--terracotta);
+  --color-bright: var(--bright);
+  --color-text: var(--text);
+  --color-text2: var(--text2);
+  --color-muted: var(--muted);
+  --color-muted2: var(--muted2);
+  --color-demand-high: var(--demand-high);
+  --color-demand-good: var(--demand-good);
+  --color-demand-medium: var(--demand-medium);
+  --color-demand-low: var(--demand-low);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-playfair);
+  --font-mono: var(--font-jetbrains);
+}
+
+/* ========================================
+   BASE
+   ======================================== */
+body {
+  font-family: var(--font-sans), sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  position: relative;
+  transition: overflow 0.3s;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* No italics anywhere */
+* {
+  font-style: normal !important;
+}
+
+/* ========================================
+   VIEW TRANSITIONS (data-view on wrapper)
+   ======================================== */
+
+/* Landing view */
+[data-view="landing"] .view-landing {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  position: relative;
+  height: auto;
+  overflow: visible;
+}
+[data-view="landing"] .view-workstation,
+[data-view="landing"] .view-collection {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Workstation view */
+[data-view="workstation"] .view-workstation {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 50;
+}
+[data-view="workstation"] .view-landing,
+[data-view="workstation"] .view-collection {
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Collection view */
+[data-view="collection"] .view-collection {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  position: relative;
+  height: auto;
+  overflow: visible;
+}
+[data-view="collection"] .view-landing,
+[data-view="collection"] .view-workstation {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Shared transition for all views */
+.view-landing,
+.view-workstation,
+.view-collection {
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========================================
+   VINYL VISUAL EFFECTS
+   ======================================== */
+.vinyl-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--leather) 18%, var(--text) 20%, var(--text) 28%, var(--muted) 30%, var(--text) 32%, var(--text) 44%, var(--muted) 46%, var(--text) 48%, var(--text) 100%);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.vinyl-logo::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: var(--leather);
+  border-radius: 50%;
+}
+
+/* Record platter (landing photo upload) */
+.record-platter {
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--terracotta) 0%, var(--terracotta) 6%, transparent 7%),
+    repeating-radial-gradient(
+      circle,
+      var(--border) 0px,
+      var(--border) 1px,
+      var(--card) 1px,
+      var(--card) 12px
+    );
+  border: 3px dashed var(--terracotta);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  margin: 0 auto;
+}
+
+.record-platter:hover {
+  transform: scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* Sleeve vinyl peek (landing result) */
+.sleeve-vinyl-peek {
+  position: absolute;
+  top: 10px;
+  right: -40px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--leather) 0%, var(--leather) 12%,
+    #1a1a1a 14%, #1a1a1a 18%,
+    #222 20%, #1a1a1a 22%,
+    #222 30%, #1a1a1a 32%,
+    #222 42%, #1a1a1a 44%,
+    #222 56%, #1a1a1a 58%,
+    #222 70%, #1a1a1a 72%,
+    #1a1a1a 100%
+  );
+  z-index: 1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Workstation result vinyl */
+.ws-result-vinyl {
+  position: absolute;
+  top: 20px;
+  right: -50px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--leather) 0%, var(--leather) 10%,
+    #1a1a1a 12%, #1a1a1a 16%,
+    #252525 18%, #1a1a1a 20%,
+    #252525 28%, #1a1a1a 30%,
+    #252525 40%, #1a1a1a 42%,
+    #252525 54%, #1a1a1a 56%,
+    #252525 68%, #1a1a1a 70%,
+    #1a1a1a 100%
+  );
+  z-index: 1;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Grid card vinyl peek */
+.grid-vinyl-peek {
+  position: absolute;
+  top: 50%;
+  right: -30px;
+  transform: translateY(-50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--leather) 0%, var(--leather) 16%,
+    #1a1a1a 18%, #222 28%, #1a1a1a 30%,
+    #222 44%, #1a1a1a 46%,
+    #1a1a1a 100%
+  );
+  opacity: 0;
+  transition: all 0.35s ease;
+  z-index: 3;
+}
+
+/* Collection card vinyl peek (larger) */
+.coll-vinyl-peek {
+  position: absolute;
+  top: 50%;
+  right: -30px;
+  transform: translateY(-50%);
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--leather) 0%, var(--leather) 16%,
+    #1a1a1a 18%, #222 28%, #1a1a1a 30%,
+    #222 44%, #1a1a1a 46%,
+    #1a1a1a 100%
+  );
+  opacity: 0;
+  transition: all 0.35s ease;
+  z-index: 3;
+}
+
+/* Crate vinyl peek (landing collection) */
+.crate-vinyl-peek {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    var(--leather) 0%, var(--leather) 14%,
+    #1a1a1a 16%, #222 24%, #1a1a1a 26%,
+    #222 36%, #1a1a1a 38%,
+    #222 50%, #1a1a1a 52%,
+    #1a1a1a 100%
+  );
+  z-index: 1;
+  opacity: 0.85;
+}
+
+/* ========================================
+   TRACKLIST PRICING (sleeve result)
+   ======================================== */
+.tracklist-row {
+  display: flex;
+  align-items: baseline;
+  padding: 6px 0;
+}
+
+.tracklist-side {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--terracotta);
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.tracklist-label {
+  font-size: 0.88rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tracklist-dots {
+  flex: 1;
+  border-bottom: 2px dotted var(--border);
+  margin: 0 8px;
+  min-width: 20px;
+  position: relative;
+  top: -3px;
+}
+
+.tracklist-value {
+  font-family: var(--font-mono), monospace;
+  font-weight: 500;
+  font-size: 0.92rem;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.tracklist-value.primary {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--terracotta);
+}
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+.btn-gradient {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--terracotta), var(--bright));
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(204, 85, 0, 0.2);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(204, 85, 0, 0.3);
+}
+
+.btn-gradient:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-outline {
+  padding: 12px 24px;
+  background: #fff;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.88rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-outline:hover {
+  border-color: var(--leather);
+  background: var(--card);
+}
+
+/* ========================================
+   DEMAND BADGE
+   ======================================== */
+.demand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.demand-badge.small {
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+}
+
+.demand-badge.high { background: rgba(46, 125, 50, 0.1); color: var(--demand-high); }
+.demand-badge.good { background: rgba(21, 101, 192, 0.1); color: var(--demand-good); }
+.demand-badge.medium { background: rgba(212, 160, 23, 0.1); color: var(--demand-medium); }
+.demand-badge.low { background: rgba(198, 40, 40, 0.1); color: var(--demand-low); }
+
+.demand-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.demand-badge.small .demand-dot {
+  width: 5px;
+  height: 5px;
+}
+
+/* ========================================
+   SIDEBAR ACCENT LINE
+   ======================================== */
+.sidebar-accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--terracotta), var(--bright), var(--leather));
+  z-index: 2;
+}
+
+/* ========================================
+   HOVER EFFECTS
+   ======================================== */
+.card-hover {
+  transition: all 0.25s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+}
+
+.card-hover:hover .grid-vinyl-peek {
+  opacity: 0.85;
+  right: -16px;
+}
+
+.card-hover:hover .grid-art {
+  transform: scale(1.03);
+}
+
+/* Collection card hover */
+.coll-card-hover {
+  transition: all 0.25s ease;
+}
+
+.coll-card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
+  border-color: var(--leather);
+}
+
+.coll-card-hover:hover .coll-vinyl-peek {
+  opacity: 0.85;
+  right: -16px;
+}
+
+.coll-card-hover:hover .coll-art {
+  transform: scale(1.04);
+}
+
+/* ========================================
+   HERO GROOVE PATTERN
+   ======================================== */
+.hero-groove::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  opacity: 0.06;
+  background: repeating-radial-gradient(
+    circle at center,
+    var(--text) 0px,
+    var(--text) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+  pointer-events: none;
+}
+
+/* ========================================
+   SCROLLBAR
+   ======================================== */
+.ws-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ws-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ws-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.ws-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--leather);
+}
+
+/* ========================================
+   COLLECTION DIVIDER
+   ======================================== */
+.collection-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.collection-divider::before,
+.collection-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 1200px) {
+  .ws-grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .coll-grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .coll-grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
