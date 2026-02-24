@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import NavBar from "./NavBar";
 import PhotoUpload from "./PhotoUpload";
 import TextInput from "./TextInput";
 import ValuationResult, { type ValuationData } from "./ValuationResult";
 import RecordCard from "./RecordCard";
+import RecordDetailModal, { type RecordDetail } from "./RecordDetailModal";
 
 type View = "landing" | "workstation" | "collection";
 type InputMode = "photo" | "text";
@@ -29,11 +31,19 @@ interface WorkstationViewProps {
     artist: string;
     album: string;
     year?: string | null;
+    label?: string | null;
+    country?: string | null;
     lowestPriceMxn?: string | null;
     lowestPriceUsd?: string | null;
+    lowestPriceEur?: string | null;
+    numForSale?: number | null;
+    have?: number | null;
+    want?: number | null;
+    wantRatio?: string | null;
     demand?: string | null;
     coverImage?: string | null;
     discogsUrl?: string | null;
+    valuatedAt?: string | number | null;
   }>;
   sort: SortField;
   onSortChange: (sort: SortField) => void;
@@ -61,6 +71,8 @@ export default function WorkstationView({
   onDeleteRecord,
   uploadKey,
 }: WorkstationViewProps) {
+  const [selectedRecord, setSelectedRecord] = useState<RecordDetail | null>(null);
+
   return (
     <div className="view-workstation flex flex-col" style={{ height: "100vh", width: "100%" }}>
       <NavBar activeView="workstation" onNavigate={onNavigate} />
@@ -194,13 +206,16 @@ export default function WorkstationView({
           className="flex-1 overflow-y-auto min-w-0 ws-scrollbar"
           style={{ padding: "36px 48px" }}
         >
-          {/* Loading state */}
+          {/* Loading state — spinning vinyl */}
           {loading && !result && (
             <div className="flex flex-col items-center justify-center py-20">
-              <div className="animate-spin text-3xl mb-3">
-                <div className="vinyl-logo" style={{ width: 48, height: 48 }} />
-              </div>
-              <p className="text-muted">Identifying record...</p>
+              <div className="vinyl-spinner mb-5" />
+              <p className="text-muted font-medium" style={{ fontSize: "0.95rem" }}>
+                Identifying record...
+              </p>
+              <p className="text-muted2 mt-1" style={{ fontSize: "0.8rem" }}>
+                Searching Discogs marketplace
+              </p>
             </div>
           )}
 
@@ -301,6 +316,7 @@ export default function WorkstationView({
                     demand={rec.demand ?? undefined}
                     coverImage={rec.coverImage ?? undefined}
                     onDelete={() => onDeleteRecord(rec.id)}
+                    onClick={() => setSelectedRecord(rec as RecordDetail)}
                   />
                 ))}
               </div>
@@ -308,6 +324,18 @@ export default function WorkstationView({
           )}
         </main>
       </div>
+
+      {/* Record detail modal */}
+      {selectedRecord && (
+        <RecordDetailModal
+          record={selectedRecord}
+          onClose={() => setSelectedRecord(null)}
+          onDelete={(id) => {
+            onDeleteRecord(id);
+            setSelectedRecord(null);
+          }}
+        />
+      )}
     </div>
   );
 }

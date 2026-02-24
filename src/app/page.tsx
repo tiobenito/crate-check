@@ -103,9 +103,10 @@ export default function App() {
 
       const responseData = await res.json();
       setResult(responseData);
-      // Reset photo upload after valuation
+      // Reset inputs after valuation
       setPhotoBase64(null);
       setUploadKey((k) => k + 1);
+      setTextQuery("");
     } catch {
       setResult({ success: false, error: "Network error. Please try again." });
     } finally {

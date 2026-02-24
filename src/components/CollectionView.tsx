@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import NavBar from "./NavBar";
 import RecordCard from "./RecordCard";
+import RecordDetailModal, { type RecordDetail } from "./RecordDetailModal";
 
 type View = "landing" | "workstation" | "collection";
 type SortField = "date" | "price" | "demand";
@@ -13,11 +15,19 @@ interface CollectionViewProps {
     artist: string;
     album: string;
     year?: string | null;
+    label?: string | null;
+    country?: string | null;
     lowestPriceMxn?: string | null;
     lowestPriceUsd?: string | null;
+    lowestPriceEur?: string | null;
+    numForSale?: number | null;
+    have?: number | null;
+    want?: number | null;
+    wantRatio?: string | null;
     demand?: string | null;
     coverImage?: string | null;
     discogsUrl?: string | null;
+    valuatedAt?: string | number | null;
   }>;
   sort: SortField;
   onSortChange: (sort: SortField) => void;
@@ -35,6 +45,8 @@ export default function CollectionView({
   isLoading,
   error,
 }: CollectionViewProps) {
+  const [selectedRecord, setSelectedRecord] = useState<RecordDetail | null>(null);
+
   if (error) {
     return (
       <div className="view-collection">
@@ -115,9 +127,7 @@ export default function CollectionView({
         {/* Content */}
         {isLoading ? (
           <div className="text-center py-20">
-            <div className="inline-block animate-spin">
-              <div className="vinyl-logo" style={{ width: 40, height: 40 }} />
-            </div>
+            <div className="vinyl-spinner mx-auto mb-4" />
             <p className="text-muted2 mt-3">Loading collection...</p>
           </div>
         ) : records.length === 0 ? (
@@ -153,11 +163,24 @@ export default function CollectionView({
                 demand={rec.demand ?? undefined}
                 coverImage={rec.coverImage ?? undefined}
                 onDelete={() => onDeleteRecord(rec.id)}
+                onClick={() => setSelectedRecord(rec as RecordDetail)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Record detail modal */}
+      {selectedRecord && (
+        <RecordDetailModal
+          record={selectedRecord}
+          onClose={() => setSelectedRecord(null)}
+          onDelete={(id) => {
+            onDeleteRecord(id);
+            setSelectedRecord(null);
+          }}
+        />
+      )}
     </div>
   );
 }

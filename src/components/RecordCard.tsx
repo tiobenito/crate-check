@@ -12,6 +12,7 @@ interface RecordCardProps {
   coverImage?: string;
   discogsUrl?: string;
   onDelete?: () => void;
+  onClick?: () => void;
   variant?: "grid" | "collection";
 }
 
@@ -23,6 +24,7 @@ export default function RecordCard({
   demand,
   coverImage,
   onDelete,
+  onClick,
   variant = "grid",
 }: RecordCardProps) {
   const isCollection = variant === "collection";
@@ -42,6 +44,7 @@ export default function RecordCard({
         overflow: isCollection ? "hidden" : undefined,
         padding: isCollection ? undefined : 16,
       }}
+      onClick={onClick}
     >
       {/* Art */}
       <div
