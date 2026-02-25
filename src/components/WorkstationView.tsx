@@ -302,7 +302,7 @@ export default function WorkstationView({
               {/* Grid */}
               <div
                 className="grid gap-5 pb-12 ws-grid-responsive"
-                style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+                style={{ gridTemplateColumns: "repeat(3, 1fr)", alignItems: "start" }}
               >
                 {records.map((rec) => (
                   <RecordCard

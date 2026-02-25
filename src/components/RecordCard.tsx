@@ -41,7 +41,7 @@ export default function RecordCard({
         background: "var(--card)",
         borderRadius: 16,
         border: "1px solid var(--border)",
-        overflow: isCollection ? "hidden" : undefined,
+        overflow: "hidden",
         padding: isCollection ? undefined : 16,
       }}
       onClick={onClick}
