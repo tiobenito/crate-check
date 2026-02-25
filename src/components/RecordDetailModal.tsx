@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import DemandBadge from "./DemandBadge";
 
 export interface RecordDetail {
@@ -33,7 +34,9 @@ export default function RecordDetailModal({
   onClose,
   onDelete,
 }: RecordDetailModalProps) {
-  return (
+  // Portal to document.body so the modal escapes any parent CSS transform
+  // containment (e.g. the view transition transform on .view-collection).
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center"
       style={{ background: "rgba(44, 24, 16, 0.6)", backdropFilter: "blur(4px)" }}
@@ -313,6 +316,7 @@ export default function RecordDetailModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
