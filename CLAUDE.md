@@ -1,5 +1,13 @@
 # Crate Check
 
+## Repository
+
+- **GitHub:** tiobenito/crate-check
+- **Account:** personal (tiobenito)
+- **Token env var:** `$GITHUB_PERSONAL_ACCESS_TOKEN_TIOBENITO`
+- **Deploy:** Vercel (auto-deploy on push to main)
+- **Live URL:** TBD
+
 ## What This Is
 
 A record valuator web app that identifies vinyl records from photos or text search, fetches Discogs pricing + market data via an n8n webhook, and saves records to a personal collection stored in Instant.
