@@ -15,6 +15,14 @@ interface RecordMetadata {
   error?: string;
 }
 
+function detectMediaType(base64: string): "image/jpeg" | "image/png" | "image/webp" | "image/gif" {
+  if (base64.startsWith("/9j/")) return "image/jpeg";
+  if (base64.startsWith("iVBORw0KGgo")) return "image/png";
+  if (base64.startsWith("UklGR")) return "image/webp";
+  if (base64.startsWith("R0lGOD")) return "image/gif";
+  return "image/jpeg";
+}
+
 async function extractFromPhoto(base64: string): Promise<RecordMetadata> {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -34,7 +42,7 @@ async function extractFromPhoto(base64: string): Promise<RecordMetadata> {
               type: "image",
               source: {
                 type: "base64",
-                media_type: "image/jpeg",
+                media_type: detectMediaType(base64),
                 data: base64,
               },
             },
