@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { id } from "@instantdb/react";
-import db from "@/lib/db";
+import { useState, useEffect, useCallback } from "react";
 import LandingView from "@/components/LandingView";
 import WorkstationView from "@/components/WorkstationView";
 import CollectionView from "@/components/CollectionView";
@@ -11,6 +9,63 @@ import { type ValuationData } from "@/components/ValuationResult";
 type View = "landing" | "workstation" | "collection";
 type InputMode = "photo" | "text";
 type SortField = "date" | "price" | "demand";
+
+const STORAGE_KEY = "crate-check-records";
+
+interface RecordEntry {
+  id: string;
+  artist: string;
+  album: string;
+  year?: string | null;
+  label?: string | null;
+  country?: string | null;
+  lowestPriceUsd?: string | null;
+  lowestPriceMxn?: string | null;
+  lowestPriceEur?: string | null;
+  numForSale?: number | null;
+  have?: number | null;
+  want?: number | null;
+  wantRatio?: string | null;
+  demand?: string | null;
+  coverImage?: string | null;
+  discogsUrl?: string | null;
+  valuatedAt?: string | number | null;
+}
+
+function useLocalRecords() {
+  const [records, setRecords] = useState<RecordEntry[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setRecords(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const save = useCallback((record: Omit<RecordEntry, "id">) => {
+    const entry: RecordEntry = {
+      ...record,
+      id: crypto.randomUUID(),
+    };
+    setRecords((prev) => {
+      const next = [entry, ...prev];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const remove = useCallback((id: string) => {
+    setRecords((prev) => {
+      const next = prev.filter((r) => r.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  return { records, save, remove };
+}
 
 const demandOrder: Record<string, number> = {
   High: 4,
@@ -37,8 +92,7 @@ export default function App() {
   const [sort, setSort] = useState<SortField>("date");
   const [uploadKey, setUploadKey] = useState(0);
 
-  const { data, isLoading, error } = db.useQuery({ records: {} });
-  const records = data?.records ?? [];
+  const { records, save, remove } = useLocalRecords();
 
   const sorted = [...records].sort((a, b) => {
     switch (sort) {
@@ -61,7 +115,6 @@ export default function App() {
     }
   });
 
-  // Control body overflow for workstation view
   useEffect(() => {
     document.body.style.overflow =
       currentView === "workstation" ? "hidden" : "auto";
@@ -70,7 +123,6 @@ export default function App() {
     };
   }, [currentView]);
 
-  // Scroll to top on view change
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [currentView]);
@@ -84,7 +136,6 @@ export default function App() {
     setResult(null);
     setSaved(false);
 
-    // Switch to workstation when valuating
     if (currentView === "landing") {
       setCurrentView("workstation");
     }
@@ -103,7 +154,6 @@ export default function App() {
 
       const responseData = await res.json();
       setResult(responseData);
-      // Reset inputs after valuation
       setPhotoBase64(null);
       setUploadKey((k) => k + 1);
       setTextQuery("");
@@ -118,36 +168,34 @@ export default function App() {
     if (!result || !result.success) return;
     setSaving(true);
     try {
-      db.transact(
-        db.tx.records[id()].update({
-          artist: result.artist!,
-          album: result.album!,
-          year: result.year,
-          label: result.label,
-          country: result.country,
-          lowestPriceUsd: result.lowestPriceUsd,
-          lowestPriceMxn: result.lowestPriceMxn,
-          lowestPriceEur: result.lowestPriceEur,
-          numForSale: result.numForSale,
-          have: result.have,
-          want: result.want,
-          wantRatio: result.wantRatio,
-          demand: result.demand,
-          discogsUrl: result.discogsUrl,
-          coverImage: result.coverImage,
-          valuatedAt: Date.now(),
-        })
-      );
+      save({
+        artist: result.artist!,
+        album: result.album!,
+        year: result.year,
+        label: result.label,
+        country: result.country,
+        lowestPriceUsd: result.lowestPriceUsd,
+        lowestPriceMxn: result.lowestPriceMxn,
+        lowestPriceEur: result.lowestPriceEur,
+        numForSale: result.numForSale,
+        have: result.have,
+        want: result.want,
+        wantRatio: result.wantRatio,
+        demand: result.demand,
+        discogsUrl: result.discogsUrl,
+        coverImage: result.coverImage,
+        valuatedAt: Date.now(),
+      });
       setSaved(true);
     } catch {
-      // silent fail — Instant will retry
+      // silent fail
     } finally {
       setSaving(false);
     }
   }
 
   function handleDeleteRecord(recordId: string) {
-    db.transact(db.tx.records[recordId].delete());
+    remove(recordId);
   }
 
   const canValuate =
@@ -198,8 +246,8 @@ export default function App() {
         sort={sort}
         onSortChange={setSort}
         onDeleteRecord={handleDeleteRecord}
-        isLoading={isLoading}
-        error={error}
+        isLoading={false}
+        error={null}
       />
     </div>
   );
