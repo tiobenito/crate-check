@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crate Check — Tabbed App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FDF6E3;
+    --card: #F5EDD8;
+    --border: #E8DCC8;
+    --leather: #C4A882;
+    --terracotta: #CC5500;
+    --bright: #E06B1F;
+    --text: #2C1810;
+    --text2: #3D2B1A;
+    --muted: #5C4033;
+    --muted2: #8B7355;
+    --demand-high: #2E7D32;
+    --demand-good: #1565C0;
+    --demand-medium: #D4A017;
+    --demand-low: #C62828;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 60px;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ===== APP SHELL ===== */
+  .app-shell {
+    width: 100%;
+    max-width: 720px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ===== APP HEADER ===== */
+  .app-header {
+    background: linear-gradient(135deg, var(--terracotta), var(--bright));
+    padding: 20px 28px;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow:
+      0 4px 20px rgba(204, 85, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle grain on header */
+  .app-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .header-disc {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(255,255,255,0.15), rgba(255,255,255,0.3), rgba(255,255,255,0.1), rgba(255,255,255,0.25), rgba(255,255,255,0.15));
+    position: relative;
+    box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .header-disc::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+  }
+
+  .header-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 900;
+    font-style: normal;
+    color: #FDF6E3;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    z-index: 1;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+
+  .header-tagline {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(253, 246, 227, 0.7);
+    margin-left: auto;
+    z-index: 1;
+    letter-spacing: 0.3px;
+  }
+
+  /* ===== TABS ===== */
+  .tab-bar {
+    display: flex;
+    background: var(--border);
+    position: relative;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 16px 0;
+    text-align: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    border: none;
+    background: var(--border);
+    transition: all 0.25s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.2px;
+  }
+
+  .tab .tab-icon {
+    font-size: 16px;
+  }
+
+  .tab.active {
+    background: var(--card);
+    color: var(--terracotta);
+    box-shadow: inset 0 2px 0 var(--terracotta);
+  }
+
+  .tab:not(.active):hover {
+    background: rgba(245, 237, 216, 0.5);
+    color: var(--text2);
+  }
+
+  /* Active tab connects to content */
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--card);
+  }
+
+  /* ===== TAB CONTENT ===== */
+  .tab-content {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    min-height: 400px;
+    box-shadow:
+      0 4px 20px rgba(44, 24, 16, 0.06),
+      0 1px 3px rgba(44, 24, 16, 0.04);
+  }
+
+  .tab-panel {
+    display: none;
+    padding: 28px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== UPLOAD SECTION ===== */
+  .mode-toggle {
+    display: flex;
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .mode-btn.active {
+    background: white;
+    color: var(--terracotta);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .mode-btn:hover:not(.active) {
+    color: var(--text2);
+  }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 44px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: rgba(253, 246, 227, 0.5);
+  }
+
+  .upload-zone:hover {
+    border-color: var(--terracotta);
+    background: rgba(204, 85, 0, 0.03);
+  }
+
+  .upload-emoji {
+    font-size: 40px;
+    display: block;
+    margin-bottom: 14px;
+  }
+
+  .upload-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+
+  .upload-hint {
+    font-size: 13px;
+    color: var(--muted2);
+    line-height: 1.5;
+  }
+
+  /* Text search */
+  .text-search {
+    display: none;
+  }
+
+  .text-search.visible {
+    display: block;
+  }
+
+  .search-input-wrap {
+    position: relative;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 14px 16px 14px 42px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: rgba(253, 246, 227, 0.5);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: var(--terracotta);
+  }
+
+  .search-input::placeholder {
+    color: var(--muted2);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted2);
+    font-size: 16px;
+  }
+
+  .search-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 13px;
+    background: var(--terracotta);
+    color: #FDF6E3;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .search-btn:hover {
+    background: var(--bright);
+  }
+
+  /* ===== RESULT SECTION ===== */
+  .result-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0;
+  }
+
+  .result-divider::before,
+  .result-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .result-divider span {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted2);
+  }
+
+  .result-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.5),
+      0 2px 10px rgba(44, 24, 16, 0.06);
+  }
+
+  .result-artwork {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    overflow: hidden;
+    background: var(--border);
+  }
+
+  .result-artwork img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .result-artwork::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to top, var(--bg), transparent);
+    pointer-events: none;
+  }
+
+  /* Vinyl disc peek */
+  .vinyl-peek {
+    position: absolute;
+    right: 24px;
+    bottom: -30px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      #1a1a1a, #2a2a2a, #1a1a1a, #333, #1a1a1a,
+      #2a2a2a, #1a1a1a, #2a2a2a, #1a1a1a
+    );
+    box-shadow:
+      inset 0 0 0 4px rgba(255,255,255,0.03),
+      inset 0 0 0 18px rgba(0,0,0,0.3),
+      0 4px 16px rgba(0,0,0,0.2);
+    z-index: 3;
+  }
+
+  .vinyl-peek::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: repeating-radial-gradient(
+      circle at center,
+      transparent 0px,
+      transparent 2px,
+      rgba(255,255,255,0.03) 2px,
+      rgba(255,255,255,0.03) 3px
+    );
+  }
+
+  .vinyl-peek::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--terracotta);
+    box-shadow: 0 0 0 3px #1a1a1a, 0 0 0 5px rgba(204, 85, 0, 0.4);
+  }
+
+  .result-body {
+    padding: 24px;
+  }
+
+  .result-meta-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .demand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .demand-badge.high {
+    background: rgba(46, 125, 50, 0.1);
+    color: var(--demand-high);
+    border: 1px solid rgba(46, 125, 50, 0.2);
+  }
+
+  .demand-badge.good {
+    background: rgba(21, 101, 192, 0.1);
+    color: var(--demand-good);
+    border: 1px solid rgba(21, 101, 192, 0.2);
+  }
+
+  .demand-badge.medium {
+    background: rgba(212, 160, 23, 0.1);
+    color: var(--demand-medium);
+    border: 1px solid rgba(212, 160, 23, 0.2);
+  }
+
+  .demand-badge.low {
+    background: rgba(198, 40, 40, 0.1);
+    color: var(--demand-low);
+    border: 1px solid rgba(198, 40, 40, 0.2);
+  }
+
+  .demand-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .country-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted2);
+    background: rgba(139, 115, 85, 0.1);
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .result-artist {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    font-weight: 900;
+    font-style: normal;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+
+  .result-album {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .result-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+
+  .result-label span {
+    color: var(--muted2);
+  }
+
+  /* Price block */
+  .price-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+
+  .price-primary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--terracotta);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+
+  .price-conversions {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted2);
+    letter-spacing: -0.2px;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .stat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--muted);
+    background: rgba(232, 220, 200, 0.6);
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+
+  .stat-chip .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    color: var(--text2);
+  }
+
+  /* Action buttons */
+  .result-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--terracotta);
+    color: #FDF6E3;
+    box-shadow: 0 2px 8px rgba(204, 85, 0, 0.2);
+    flex: 1;
+  }
+
+  .btn-primary:hover {
+    background: var(--bright);
+    box-shadow: 0 4px 12px rgba(204, 85, 0, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+    flex: 1;
+  }
+
+  .btn-outline:hover {
+    border-color: var(--leather);
+    color: var(--text2);
+    background: rgba(245, 237, 216, 0.5);
+  }
+
+  /* ===== COLLECTION TAB ===== */
+  .collection-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .collection-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted2);
+    letter-spacing: 0.3px;
+  }
+
+  .sort-controls {
+    display: flex;
+    gap: 3px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+  }
+
+  .sort-btn {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .sort-btn.active {
+    background: white;
+    color: var(--terracotta);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .sort-btn:hover:not(.active) {
+    color: var(--text2);
+  }
+
+  /* 3-column grid */
+  .collection-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .grid-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.5),
+      0 1px 4px rgba(44, 24, 16, 0.04);
+  }
+
+  .grid-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      inset 0 1px 2px rgba(255, 255, 255, 0.5),
+      0 8px 24px rgba(44, 24, 16, 0.1),
+      0 2px 6px rgba(44, 24, 16, 0.06);
+    border-color: var(--leather);
+  }
+
+  .grid-card-img {
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    position: relative;
+    background: var(--border);
+  }
+
+  .grid-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  .grid-card:hover .grid-card-img img {
+    transform: scale(1.04);
+  }
+
+  /* Mini vinyl peek on grid cards */
+  .grid-vinyl {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #1a1a1a, #2a2a2a, #1a1a1a, #333, #1a1a1a);
+    opacity: 0;
+    transition: all 0.25s ease;
+    z-index: 2;
+  }
+
+  .grid-vinyl::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--terracotta);
+    box-shadow: 0 0 0 2px #1a1a1a;
+  }
+
+  .grid-card:hover .grid-vinyl {
+    right: -6px;
+    bottom: -6px;
+    opacity: 1;
+  }
+
+  .grid-card-body {
+    padding: 10px 12px 12px;
+  }
+
+  .grid-card-artist {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 700;
+    font-style: normal;
+    color: var(--text);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .grid-card-album {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+    margin-bottom: 8px;
+  }
+
+  .grid-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .grid-card-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--terracotta);
+    white-space: nowrap;
+  }
+
+  .mini-demand {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .mini-demand.high {
+    background: rgba(46, 125, 50, 0.08);
+    color: var(--demand-high);
+  }
+
+  .mini-demand.good {
+    background: rgba(21, 101, 192, 0.08);
+    color: var(--demand-good);
+  }
+
+  .mini-demand.medium {
+    background: rgba(212, 160, 23, 0.08);
+    color: var(--demand-medium);
+  }
+
+  .mini-demand-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* ===== FOOTER ===== */
+  .app-footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted2);
+    line-height: 1.6;
+    padding: 20px 0 0;
+  }
+
+  .app-footer a {
+    color: var(--terracotta);
+    text-decoration: none;
+  }
+
+  .app-footer a:hover {
+    text-decoration: underline;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 640px) {
+    body {
+      padding: 16px 10px 40px;
+    }
+
+    .app-header {
+      padding: 16px 20px;
+      border-radius: 14px 14px 0 0;
+    }
+
+    .header-text {
+      font-size: 22px;
+    }
+
+    .header-tagline {
+      display: none;
+    }
+
+    .tab {
+      padding: 14px 0;
+      font-size: 14px;
+    }
+
+    .tab-panel {
+      padding: 20px 16px;
+    }
+
+    .result-artwork {
+      height: 200px;
+    }
+
+    .result-artist {
+      font-size: 20px;
+    }
+
+    .price-primary {
+      font-size: 24px;
+    }
+
+    .result-actions {
+      flex-direction: column;
+    }
+
+    .collection-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .collection-toolbar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .collection-grid {
+      gap: 8px;
+    }
+
+    .grid-card-body {
+      padding: 8px 10px 10px;
+    }
+
+    .grid-card-artist {
+      font-size: 12px;
+    }
+
+    .grid-card-price {
+      font-size: 11px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ===== APP HEADER ===== -->
+  <header class="app-header">
+    <div class="header-disc"></div>
+    <div class="header-text">Crate Check</div>
+    <div class="header-tagline">Vinyl Record Valuator</div>
+  </header>
+
+  <!-- ===== TABS ===== -->
+  <div class="tab-bar">
+    <button class="tab active" data-tab="valuate">
+      <span class="tab-icon">&#x1F4CA;</span> Valuate
+    </button>
+    <button class="tab" data-tab="collection">
+      <span class="tab-icon">&#x1F4BF;</span> Collection
+    </button>
+  </div>
+
+  <!-- ===== TAB CONTENT ===== -->
+  <div class="tab-content">
+
+    <!-- VALUATE PANEL -->
+    <div class="tab-panel active" id="panel-valuate">
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" onclick="showPhoto()">
+          &#x1F4F7; Photo
+        </button>
+        <button class="mode-btn" onclick="showText()">
+          &#x1F50E; Text Search
+        </button>
+      </div>
+
+      <!-- Photo upload (default) -->
+      <div class="upload-zone" id="upload-zone">
+        <span class="upload-emoji">&#x1F4F7;</span>
+        <div class="upload-title">Drop a record photo here</div>
+        <div class="upload-hint">or click to browse &middot; JPG, PNG, WebP</div>
+      </div>
+
+      <!-- Text search (hidden) -->
+      <div class="text-search" id="text-search">
+        <div class="search-input-wrap">
+          <span class="search-icon">&#x1F50D;</span>
+          <input type="text" class="search-input" placeholder="Artist, album, or catalog #">
+        </div>
+        <button class="search-btn">Search Discogs</button>
+      </div>
+
+      <!-- Result divider -->
+      <div class="result-divider">
+        <span>Result</span>
+      </div>
+
+      <!-- Result card -->
+      <div class="result-card">
+        <div class="result-artwork">
+          <img src="https://i.discogs.com/WK0Rz8MjNgqbEwrOoZzRvUhxIVc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4536214-1367623820-4293.jpeg.jpg" alt="Cumbia Sin Fronteras album cover">
+          <div class="vinyl-peek"></div>
+        </div>
+
+        <div class="result-body">
+          <div class="result-meta-top">
+            <span class="demand-badge high"><span class="demand-dot"></span> High Demand</span>
+            <span class="country-tag">Colombia &middot; 1985</span>
+          </div>
+
+          <div class="result-artist">La Sonora Dinamita</div>
+          <div class="result-album">Cumbia Sin Fronteras</div>
+          <div class="result-label">Discos Fuentes <span>&middot; Original pressing</span></div>
+
+          <div class="price-block">
+            <div class="price-primary">$519 MXN</div>
+            <div class="price-conversions">USD $30.14 &middot; EUR &euro;25.19</div>
+          </div>
+
+          <div class="stats-row">
+            <span class="stat-chip"><span class="num">2</span> for sale</span>
+            <span class="stat-chip"><span class="num">3</span> have &middot; <span class="num">6</span> want</span>
+          </div>
+
+          <div class="result-actions">
+            <button class="btn btn-primary">&#x1F4BE; Save to Collection</button>
+            <a href="#" class="btn btn-outline">View on Discogs &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- COLLECTION PANEL -->
+    <div class="tab-panel" id="panel-collection">
+
+      <!-- Toolbar -->
+      <div class="collection-toolbar">
+        <span class="collection-count">6 records saved</span>
+        <div class="sort-controls">
+          <button class="sort-btn active">Date</button>
+          <button class="sort-btn">Price</button>
+          <button class="sort-btn">Demand</button>
+        </div>
+      </div>
+
+      <!-- 3-column grid -->
+      <div class="collection-grid">
+
+        <!-- Record 1 -->
+        <div class="grid-card">
+          <div class="grid-card-img">
+            <img src="https://i.discogs.com/WK0Rz8MjNgqbEwrOoZzRvUhxIVc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4536214-1367623820-4293.jpeg.jpg" alt="Cumbia Sin Fronteras">
+            <div class="grid-vinyl"></div>
+          </div>
+          <div class="grid-card-body">
+            <div class="grid-card-artist">La Sonora Dinamita</div>
+            <div class="grid-card-album">Cumbia Sin Fronteras</div>
+            <div class="grid-card-footer">
+              <span class="grid-card-price">$519</span>
+              <span class="mini-demand high"><span class="mini-demand-dot"></span> High</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record 2 -->
+        <div class="grid-card">
+          <div class="grid-card-img">
+            <img src="https://i.discogs.com/J8N4G1JTwDwiYQ7bGsQ__4F6fIk=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-3876771-1507898048-3389.jpeg.jpg" alt="Amigo">
+            <div class="grid-vinyl"></div>
+          </div>
+          <div class="grid-card-body">
+            <div class="grid-card-artist">Bronco</div>
+            <div class="grid-card-album">Amigo</div>
+            <div class="grid-card-footer">
+              <span class="grid-card-price">$350</span>
+              <span class="mini-demand good"><span class="mini-demand-dot"></span> Good</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record 3 -->
+        <div class="grid-card">
+          <div class="grid-card-img">
+            <img src="https://i.discogs.com/GqxIMqKv2fEW_b17c6L2e86dlBg=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4869625-1378147289-5752.jpeg.jpg" alt="Amor Prohibido">
+            <div class="grid-vinyl"></div>
+          </div>
+          <div class="grid-card-body">
+            <div class="grid-card-artist">Selena</div>
+            <div class="grid-card-album">Amor Prohibido</div>
+            <div class="grid-card-footer">
+              <span class="grid-card-price">$2,400</span>
+              <span class="mini-demand high"><span class="mini-demand-dot"></span> High</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record 4 -->
+        <div class="grid-card">
+          <div class="grid-card-img">
+            <img src="https://i.discogs.com/1k6FDvPPqFmLk2ItXB_bsIGBbXA=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-1831538-1358605149-2291.jpeg.jpg" alt="A Donde Vas">
+            <div class="grid-vinyl"></div>
+          </div>
+          <div class="grid-card-body">
+            <div class="grid-card-artist">Los Bukis</div>
+            <div class="grid-card-album">A Donde Vas</div>
+            <div class="grid-card-footer">
+              <span class="grid-card-price">$280</span>
+              <span class="mini-demand medium"><span class="mini-demand-dot"></span> Medium</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record 5 -->
+        <div class="grid-card">
+          <div class="grid-card-img">
+            <img src="https://i.discogs.com/9wphiUlEJnWJhHdyVFzF0h1pLk0=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-7070025-1433073973-3593.jpeg.jpg" alt="Barrio Bravo">
+            <div class="grid-vinyl"></div>
+          </div>
+          <div class="grid-card-body">
+            <div class="grid-card-artist">Celso Pina</div>
+            <div class="grid-card-album">Barrio Bravo</div>
+            <div class="grid-card-footer">
+              <span class="grid-card-price">$180</span>
+              <span class="mini-demand good"><span class="mini-demand-dot"></span> Good</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record 6 -->
+        <div class="grid-card">
+          <div class="grid-card-img">
+            <img src="https://i.discogs.com/kxLJ-4O8sQ2cQEBHE-6b_-GqHvc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-2459505-1285357293.jpeg.jpg" alt="Como Te Voy a Olvidar">
+            <div class="grid-vinyl"></div>
+          </div>
+          <div class="grid-card-body">
+            <div class="grid-card-artist">Los Angeles Azules</div>
+            <div class="grid-card-album">Como Te Voy a Olvidar</div>
+            <div class="grid-card-footer">
+              <span class="grid-card-price">$420</span>
+              <span class="mini-demand high"><span class="mini-demand-dot"></span> High</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <div class="app-footer">
+    Powered by <a href="https://www.discogs.com/" target="_blank">Discogs</a> data &middot; Built with Claude Code
+  </div>
+
+</div>
+
+<script>
+  // ===== Tab switching =====
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.tab-panel');
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var target = tab.getAttribute('data-tab');
+
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+
+      panels.forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + target).classList.add('active');
+    });
+  });
+
+  // ===== Photo / Text toggle =====
+  function showPhoto() {
+    document.getElementById('upload-zone').style.display = '';
+    document.getElementById('text-search').className = 'text-search';
+    document.querySelectorAll('.mode-btn').forEach(function(btn, i) {
+      btn.classList.toggle('active', i === 0);
+    });
+  }
+
+  function showText() {
+    document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('text-search').className = 'text-search visible';
+    document.querySelectorAll('.mode-btn').forEach(function(btn, i) {
+      btn.classList.toggle('active', i === 1);
+    });
+  }
+
+  // ===== Sort button active state =====
+  document.querySelectorAll('.sort-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

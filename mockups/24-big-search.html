@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crate Check — Big Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FDF6E3;
+    --card: #F5EDD8;
+    --border: #E8DCC8;
+    --leather: #C4A882;
+    --terracotta: #CC5500;
+    --bright: #E06B1F;
+    --text: #2C1810;
+    --text2: #3D2B1A;
+    --muted: #5C4033;
+    --muted2: #8B7355;
+    --demand-high: #2E7D32;
+    --demand-good: #1565C0;
+    --demand-medium: #D4A017;
+    --demand-low: #C62828;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; font-style: normal; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ===== NAV ===== */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-disc {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--terracotta), var(--bright), var(--terracotta), #D4782F, var(--terracotta));
+    position: relative;
+    box-shadow: 0 2px 8px rgba(204, 85, 0, 0.2);
+    flex-shrink: 0;
+  }
+
+  .nav-disc::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bg);
+    box-shadow: 0 0 0 2px rgba(204, 85, 0, 0.3);
+  }
+
+  .nav-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 18px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .nav-link {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .nav-link:hover {
+    border-color: var(--leather);
+    color: var(--text);
+    background: rgba(196, 168, 130, 0.1);
+  }
+
+  /* ===== HERO SEARCH SECTION ===== */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 24px 40px;
+    max-width: 780px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 88px;
+    color: var(--text);
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .hero-tagline {
+    font-size: 18px;
+    color: var(--muted2);
+    font-weight: 400;
+    margin-bottom: 36px;
+    letter-spacing: 0.2px;
+  }
+
+  /* ===== MASSIVE SEARCH BAR ===== */
+  .search-bar {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    align-items: center;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 6px 6px 20px;
+    box-shadow:
+      0 4px 24px rgba(44, 24, 16, 0.06),
+      0 1px 4px rgba(44, 24, 16, 0.04);
+    transition: all 0.25s;
+    gap: 12px;
+  }
+
+  .search-bar:focus-within {
+    border-color: var(--terracotta);
+    box-shadow:
+      0 6px 32px rgba(204, 85, 0, 0.1),
+      0 2px 8px rgba(44, 24, 16, 0.06);
+  }
+
+  .search-camera {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(196, 168, 130, 0.15);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: var(--muted2);
+  }
+
+  .search-camera:hover {
+    background: rgba(196, 168, 130, 0.3);
+    color: var(--muted);
+  }
+
+  .search-camera svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    color: var(--text);
+    outline: none;
+    min-width: 0;
+    height: 52px;
+  }
+
+  .search-input::placeholder {
+    color: var(--muted2);
+  }
+
+  .search-btn {
+    flex-shrink: 0;
+    padding: 0 28px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--terracotta);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(204, 85, 0, 0.25);
+    letter-spacing: 0.3px;
+  }
+
+  .search-btn:hover {
+    background: var(--bright);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(204, 85, 0, 0.35);
+  }
+
+  .search-helper {
+    font-size: 13px;
+    color: var(--muted2);
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .search-helper svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.6;
+  }
+
+  /* ===== RESULT CARD ===== */
+  .result-section {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+  }
+
+  .result-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(44, 24, 16, 0.06);
+  }
+
+  .result-header {
+    display: flex;
+    gap: 22px;
+    padding: 24px;
+    position: relative;
+  }
+
+  .result-artwork-wrap {
+    width: 150px;
+    height: 150px;
+    border-radius: 14px;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(44, 24, 16, 0.12);
+  }
+
+  .result-artwork-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Vinyl disc peek */
+  .result-artwork-wrap::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -18px;
+    transform: translateY(-50%);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #1a1a1a, #333, #1a1a1a, #2a2a2a, #1a1a1a);
+    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.08), inset 0 0 0 9px rgba(0, 0, 0, 0.4), inset 0 0 0 10px rgba(255, 255, 255, 0.05);
+    z-index: 2;
+  }
+
+  .result-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .result-artist {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--terracotta);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .result-album {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 24px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+  }
+
+  .result-meta-line {
+    font-size: 13px;
+    color: var(--muted2);
+    margin-top: 2px;
+  }
+
+  .result-demand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    width: fit-content;
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .result-demand-badge.high {
+    background: rgba(46, 125, 50, 0.1);
+    color: var(--demand-high);
+  }
+
+  .result-demand-badge::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* Price section */
+  .result-prices {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .price-cell {
+    padding: 16px 22px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+  }
+
+  .price-cell:last-child {
+    border-right: none;
+  }
+
+  .price-cell-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted2);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+
+  .price-cell-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .price-cell-value.primary {
+    color: var(--terracotta);
+    font-size: 24px;
+  }
+
+  /* Market stats */
+  .result-market {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    background: rgba(196, 168, 130, 0.08);
+  }
+
+  .market-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .market-stat strong {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    color: var(--text2);
+  }
+
+  .market-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--border);
+  }
+
+  /* Result actions */
+  .result-actions {
+    display: flex;
+    gap: 10px;
+    padding: 16px 22px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-save {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: var(--terracotta);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(204, 85, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-save:hover {
+    background: var(--bright);
+    transform: translateY(-1px);
+  }
+
+  .btn-discogs {
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .btn-discogs:hover {
+    border-color: var(--leather);
+    color: var(--text);
+    background: rgba(196, 168, 130, 0.1);
+  }
+
+  /* ===== COLLECTION SECTION ===== */
+  .collection-section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  .collection-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .collection-heading-group {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .section-heading {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 26px;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  .collection-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted2);
+  }
+
+  .sort-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .sort-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .sort-btn.active {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+
+  .sort-btn:hover:not(.active) {
+    border-color: var(--leather);
+    color: var(--muted);
+  }
+
+  /* Collection grid */
+  .collection-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .collection-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .collection-card:hover {
+    border-color: var(--leather);
+    box-shadow: 0 4px 20px rgba(44, 24, 16, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .card-artwork-wrap {
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .card-artwork-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Vinyl disc peek on cards */
+  .card-artwork-wrap::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -14px;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #1a1a1a, #333, #1a1a1a, #2a2a2a, #1a1a1a);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 0 0 6px rgba(0, 0, 0, 0.4), inset 0 0 0 7px rgba(255, 255, 255, 0.04);
+    z-index: 2;
+  }
+
+  .card-body {
+    padding: 14px 16px 16px;
+  }
+
+  .card-artist {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--terracotta);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-album {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.2;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .card-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .card-demand {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .card-demand.high {
+    background: rgba(46, 125, 50, 0.1);
+    color: var(--demand-high);
+  }
+
+  .card-demand.good {
+    background: rgba(21, 101, 192, 0.1);
+    color: var(--demand-good);
+  }
+
+  .card-demand.medium {
+    background: rgba(212, 160, 23, 0.12);
+    color: var(--demand-medium);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .hero {
+      padding: 40px 20px 30px;
+    }
+
+    .hero-title {
+      font-size: 56px;
+      letter-spacing: -1px;
+    }
+
+    .hero-tagline {
+      font-size: 15px;
+      margin-bottom: 28px;
+    }
+
+    .search-bar {
+      padding: 4px 4px 4px 14px;
+      border-radius: 16px;
+      gap: 8px;
+    }
+
+    .search-input {
+      font-size: 15px;
+      height: 44px;
+    }
+
+    .search-camera {
+      width: 38px;
+      height: 38px;
+    }
+
+    .search-camera svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .search-btn {
+      padding: 0 18px;
+      height: 44px;
+      font-size: 14px;
+      border-radius: 12px;
+    }
+
+    .result-header {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .result-info {
+      align-items: center;
+    }
+
+    .result-artwork-wrap {
+      width: 160px;
+      height: 160px;
+    }
+
+    .result-prices {
+      grid-template-columns: 1fr;
+    }
+
+    .price-cell {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 22px;
+    }
+
+    .price-cell:last-child {
+      border-bottom: none;
+    }
+
+    .result-actions {
+      flex-direction: column;
+    }
+
+    .btn-discogs {
+      justify-content: center;
+    }
+
+    .collection-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .section-heading {
+      font-size: 22px;
+    }
+
+    .nav {
+      padding: 14px 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-title {
+      font-size: 44px;
+    }
+
+    .collection-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .card-album {
+      font-size: 13px;
+    }
+
+    .card-price {
+      font-size: 13px;
+    }
+
+    .collection-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .result-market {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-disc"></div>
+    <span class="nav-title">Crate Check</span>
+  </div>
+  <a href="#collection" class="nav-link">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
+    Collection
+  </a>
+</nav>
+
+<!-- ===== HERO SEARCH ===== -->
+<section class="hero">
+  <h1 class="hero-title">Crate Check</h1>
+  <p class="hero-tagline">Know what your vinyl is worth before you buy, sell, or trade.</p>
+
+  <div class="search-bar">
+    <button class="search-camera" title="Upload a photo">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Z" />
+      </svg>
+    </button>
+    <input class="search-input" type="text" placeholder="Artist + album name..." value="La Sonora Dinamita — Cumbia Sin Fronteras">
+    <button class="search-btn">Valuate</button>
+  </div>
+
+  <span class="search-helper">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" /></svg>
+    Upload a photo or type artist + album name
+  </span>
+</section>
+
+<!-- ===== RESULT CARD ===== -->
+<section class="result-section">
+  <div class="result-card">
+    <div class="result-header">
+      <div class="result-artwork-wrap">
+        <img src="https://i.discogs.com/WK0Rz8MjNgqbEwrOoZzRvUhxIVc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4536214-1367623820-4293.jpeg.jpg" alt="Cumbia Sin Fronteras album cover">
+      </div>
+      <div class="result-info">
+        <span class="result-artist">La Sonora Dinamita</span>
+        <h2 class="result-album">Cumbia Sin Fronteras</h2>
+        <span class="result-meta-line">Discos Fuentes &middot; Colombia &middot; 1985</span>
+        <div class="result-demand-badge high">High Demand</div>
+      </div>
+    </div>
+
+    <div class="result-prices">
+      <div class="price-cell">
+        <div class="price-cell-label">MXN</div>
+        <div class="price-cell-value primary">$519</div>
+      </div>
+      <div class="price-cell">
+        <div class="price-cell-label">USD</div>
+        <div class="price-cell-value">$30.14</div>
+      </div>
+      <div class="price-cell">
+        <div class="price-cell-label">EUR</div>
+        <div class="price-cell-value">&euro;25.19</div>
+      </div>
+    </div>
+
+    <div class="result-market">
+      <div class="market-stat"><strong>2</strong> for sale</div>
+      <div class="market-divider"></div>
+      <div class="market-stat"><strong>3</strong> have &middot; <strong>6</strong> want</div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-save">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Save to Collection
+      </button>
+      <a class="btn-discogs" href="#" target="_blank">
+        View on Discogs
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COLLECTION ===== -->
+<section id="collection" class="collection-section">
+  <div class="collection-header">
+    <div class="collection-heading-group">
+      <h2 class="section-heading">Collection</h2>
+      <span class="collection-count">6 records saved</span>
+    </div>
+    <div class="sort-controls">
+      <button class="sort-btn active">Date</button>
+      <button class="sort-btn">Price</button>
+      <button class="sort-btn">Demand</button>
+    </div>
+  </div>
+
+  <div class="collection-grid">
+
+    <!-- 1. La Sonora Dinamita -->
+    <div class="collection-card">
+      <div class="card-artwork-wrap">
+        <img src="https://i.discogs.com/WK0Rz8MjNgqbEwrOoZzRvUhxIVc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4536214-1367623820-4293.jpeg.jpg" alt="Cumbia Sin Fronteras">
+      </div>
+      <div class="card-body">
+        <span class="card-artist">La Sonora Dinamita</span>
+        <div class="card-album">Cumbia Sin Fronteras</div>
+        <div class="card-bottom">
+          <span class="card-price">$519 MXN</span>
+          <span class="card-demand high">High</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Bronco -->
+    <div class="collection-card">
+      <div class="card-artwork-wrap">
+        <img src="https://i.discogs.com/J8N4G1JTwDwiYQ7bGsQ__4F6fIk=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-3876771-1507898048-3389.jpeg.jpg" alt="Amigo">
+      </div>
+      <div class="card-body">
+        <span class="card-artist">Bronco</span>
+        <div class="card-album">Amigo</div>
+        <div class="card-bottom">
+          <span class="card-price">$350 MXN</span>
+          <span class="card-demand good">Good</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Selena -->
+    <div class="collection-card">
+      <div class="card-artwork-wrap">
+        <img src="https://i.discogs.com/GqxIMqKv2fEW_b17c6L2e86dlBg=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4869625-1378147289-5752.jpeg.jpg" alt="Amor Prohibido">
+      </div>
+      <div class="card-body">
+        <span class="card-artist">Selena</span>
+        <div class="card-album">Amor Prohibido</div>
+        <div class="card-bottom">
+          <span class="card-price">$2,400 MXN</span>
+          <span class="card-demand high">High</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Los Bukis -->
+    <div class="collection-card">
+      <div class="card-artwork-wrap">
+        <img src="https://i.discogs.com/1k6FDvPPqFmLk2ItXB_bsIGBbXA=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-1831538-1358605149-2291.jpeg.jpg" alt="A Donde Vas">
+      </div>
+      <div class="card-body">
+        <span class="card-artist">Los Bukis</span>
+        <div class="card-album">A Donde Vas</div>
+        <div class="card-bottom">
+          <span class="card-price">$280 MXN</span>
+          <span class="card-demand medium">Medium</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Celso Pina -->
+    <div class="collection-card">
+      <div class="card-artwork-wrap">
+        <img src="https://i.discogs.com/9wphiUlEJnWJhHdyVFzF0h1pLk0=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-7070025-1433073973-3593.jpeg.jpg" alt="Barrio Bravo">
+      </div>
+      <div class="card-body">
+        <span class="card-artist">Celso Pina</span>
+        <div class="card-album">Barrio Bravo</div>
+        <div class="card-bottom">
+          <span class="card-price">$180 MXN</span>
+          <span class="card-demand good">Good</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Los Angeles Azules -->
+    <div class="collection-card">
+      <div class="card-artwork-wrap">
+        <img src="https://i.discogs.com/kxLJ-4O8sQ2cQEBHE-6b_-GqHvc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-2459505-1285357293.jpeg.jpg" alt="Como Te Voy a Olvidar">
+      </div>
+      <div class="card-body">
+        <span class="card-artist">Los Angeles Azules</span>
+        <div class="card-album">Como Te Voy a Olvidar</div>
+        <div class="card-bottom">
+          <span class="card-price">$420 MXN</span>
+          <span class="card-demand high">High</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>

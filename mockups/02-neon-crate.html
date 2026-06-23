@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crate Check — Neon Crate Digger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #05050a;
+    --deep: #0a0a14;
+    --surface: #0f0f1e;
+    --raised: #15152a;
+    --border: #1e1e3a;
+    --border-bright: #2a2a50;
+    --muted: #5a5a8a;
+    --text: #c8c8e4;
+    --white: #eeeef6;
+    --cyan: #00f0ff;
+    --cyan-dim: #00b8c8;
+    --magenta: #ff2daa;
+    --magenta-dim: #c41e82;
+    --purple: #8b5cf6;
+    --lime: #a3e635;
+    --demand-high: #00f0ff;
+    --demand-good: #8b5cf6;
+    --demand-medium: #f59e0b;
+    --demand-low: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--void);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient glow effects */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(0,240,255,0.06) 0%, rgba(255,45,170,0.03) 40%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Grid lines background */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,240,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 920px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 2; }
+
+  /* === NAV === */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(5,5,10,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+  }
+  nav .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 800;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--white);
+    letter-spacing: -0.5px;
+  }
+  .logo-glyph {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 20px rgba(0,240,255,0.3), 0 0 40px rgba(255,45,170,0.15);
+  }
+  .logo span { color: var(--cyan); }
+  .nav-links { display: flex; gap: 2px; }
+  .nav-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .nav-link:hover { color: var(--text); background: var(--raised); }
+  .nav-link.active {
+    color: var(--cyan);
+    background: rgba(0,240,255,0.08);
+    box-shadow: inset 0 0 0 1px rgba(0,240,255,0.15);
+  }
+
+  /* === HERO === */
+  .hero {
+    text-align: center;
+    padding: 64px 0 48px;
+    position: relative;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,240,255,0.2);
+    background: rgba(0,240,255,0.05);
+    margin-bottom: 20px;
+  }
+  .hero-badge .pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,240,255,0.4); }
+    50% { opacity: 0.6; box-shadow: 0 0 0 8px rgba(0,240,255,0); }
+  }
+  .hero h1 {
+    font-size: clamp(40px, 7vw, 64px);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    color: var(--white);
+    margin-bottom: 16px;
+  }
+  .hero h1 .gradient {
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: flex;
+    justify-content: center;
+    margin: 36px 0 28px;
+  }
+  .toggle-group {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+  }
+  .toggle-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s;
+    color: var(--muted);
+    background: transparent;
+  }
+  .toggle-btn.active {
+    background: linear-gradient(135deg, rgba(0,240,255,0.12), rgba(255,45,170,0.08));
+    color: var(--cyan);
+    box-shadow: 0 0 20px rgba(0,240,255,0.1), inset 0 0 0 1px rgba(0,240,255,0.15);
+  }
+  .toggle-btn:not(.active):hover { color: var(--text); }
+
+  /* Upload zone */
+  .upload-zone {
+    max-width: 500px;
+    margin: 0 auto 28px;
+    border: 1.5px dashed var(--border-bright);
+    border-radius: 16px;
+    padding: 52px 32px;
+    text-align: center;
+    background: linear-gradient(180deg, var(--surface), var(--deep));
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+  }
+  .upload-zone:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 30px rgba(0,240,255,0.08), inset 0 0 30px rgba(0,240,255,0.02);
+  }
+  .upload-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: var(--raised);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 24px;
+  }
+  .upload-zone h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+  .upload-zone p {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Valuate button */
+  .valuate-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 auto;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 40px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--cyan), #00c4d4);
+    color: var(--void);
+    box-shadow: 0 4px 24px rgba(0,240,255,0.25), 0 0 60px rgba(0,240,255,0.1);
+    transition: all 0.25s;
+    letter-spacing: 0.3px;
+  }
+  .valuate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,240,255,0.35), 0 0 80px rgba(0,240,255,0.15);
+  }
+
+  /* === RESULT CARD === */
+  .result-card {
+    max-width: 620px;
+    margin: 40px auto 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,240,255,0.05);
+    animation: cardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .result-glow {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), var(--magenta), transparent);
+  }
+  .result-top {
+    display: flex;
+  }
+  .result-cover {
+    width: 200px;
+    flex-shrink: 0;
+    position: relative;
+    background: var(--raised);
+  }
+  .result-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .result-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 70%, var(--surface));
+  }
+  .result-info {
+    flex: 1;
+    padding: 24px;
+  }
+  .result-artist {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--cyan);
+    margin-bottom: 4px;
+  }
+  .result-album {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+  .result-meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .result-meta .sep { opacity: 0.3; }
+
+  /* Pricing */
+  .pricing-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .price-chip {
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: var(--raised);
+    border: 1px solid var(--border);
+  }
+  .price-chip.primary {
+    background: rgba(0,240,255,0.06);
+    border-color: rgba(0,240,255,0.2);
+    box-shadow: 0 0 16px rgba(0,240,255,0.08);
+  }
+  .price-currency {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    display: block;
+  }
+  .price-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--white);
+    margin-top: 2px;
+  }
+  .price-chip.primary .price-value { color: var(--cyan); }
+
+  /* Stats */
+  .stats-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .demand-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 6px;
+  }
+  .demand-high {
+    background: rgba(0,240,255,0.1);
+    color: var(--cyan);
+    border: 1px solid rgba(0,240,255,0.2);
+    box-shadow: 0 0 12px rgba(0,240,255,0.1);
+  }
+  .demand-good { background: rgba(139,92,246,0.15); color: var(--purple); border: 1px solid rgba(139,92,246,0.25); }
+  .demand-medium { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+  .demand-low { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+
+  /* Action buttons */
+  .result-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .btn-save {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--cyan), #00c4d4);
+    color: var(--void);
+    transition: all 0.2s;
+    box-shadow: 0 2px 12px rgba(0,240,255,0.2);
+  }
+  .btn-save:hover { box-shadow: 0 4px 20px rgba(0,240,255,0.3); }
+  .btn-discogs {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .btn-discogs:hover { border-color: var(--muted); color: var(--white); }
+
+  /* === DIVIDER === */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-bright), transparent);
+    margin: 72px 0;
+  }
+
+  /* === COLLECTION === */
+  .collection-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .collection-header h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.5px;
+  }
+  .collection-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+  }
+  .sort-controls {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .sort-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-right: 6px;
+  }
+  .sort-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sort-btn.active {
+    border-color: rgba(0,240,255,0.2);
+    background: rgba(0,240,255,0.06);
+    color: var(--cyan);
+  }
+
+  .collection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 16px;
+  }
+  .record-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+  }
+  .record-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 15px;
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .record-card:hover::before { opacity: 0.5; }
+  .record-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 30px rgba(0,240,255,0.08);
+  }
+  .record-card-cover {
+    aspect-ratio: 1;
+    background: var(--raised);
+    overflow: hidden;
+  }
+  .record-card-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s;
+  }
+  .record-card:hover .record-card-cover img { transform: scale(1.06); }
+  .record-card-body { padding: 14px; }
+  .record-card-artist {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .record-card-album {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+  }
+  .record-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .record-card-price {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--cyan);
+  }
+  .badge-sm {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 48px 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  @media (max-width: 640px) {
+    .result-top { flex-direction: column; }
+    .result-cover { width: 100%; height: 220px; }
+    .result-cover::after { background: linear-gradient(180deg, transparent 70%, var(--surface)); }
+    .collection-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .collection-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="#" class="logo">
+      <div class="logo-glyph">&#9676;</div>
+      Crate<span>Check</span>
+    </a>
+    <div class="nav-links">
+      <a href="#valuate" class="nav-link active">Valuate</a>
+      <a href="#collection" class="nav-link">Collection</a>
+    </div>
+  </div>
+</nav>
+
+<!-- VALUATE -->
+<section id="valuate" style="padding-top: 20px;">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        Discogs + AI Vision
+      </div>
+      <h1>Instant vinyl<br><span class="gradient">valuations</span></h1>
+      <p>Point your camera at any record. Get pricing, demand scores, and collector stats in seconds.</p>
+    </div>
+
+    <div class="mode-toggle">
+      <div class="toggle-group">
+        <button class="toggle-btn active">Photo</button>
+        <button class="toggle-btn">Text Search</button>
+      </div>
+    </div>
+
+    <div class="upload-zone">
+      <div class="upload-icon">&#128247;</div>
+      <h3>Drop a record photo</h3>
+      <p>or click to browse &middot; JPG, PNG, WebP</p>
+    </div>
+
+    <button class="valuate-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Valuate
+    </button>
+
+    <!-- RESULT -->
+    <div class="result-card">
+      <div class="result-glow"></div>
+      <div class="result-top">
+        <div class="result-cover">
+          <img src="https://i.discogs.com/WK0Rz8MjNgqbEwrOoZzRvUhxIVc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4536214-1367623820-4293.jpeg.jpg" alt="">
+        </div>
+        <div class="result-info">
+          <div class="result-artist">La Sonora Dinamita</div>
+          <div class="result-album">Cumbia Sin Fronteras</div>
+          <div class="result-meta">
+            <span>Discos Fuentes</span>
+            <span class="sep">/</span>
+            <span>Colombia</span>
+            <span class="sep">/</span>
+            <span>1985</span>
+          </div>
+
+          <div class="pricing-row">
+            <div class="price-chip primary">
+              <span class="price-currency">MXN</span>
+              <span class="price-value">$519</span>
+            </div>
+            <div class="price-chip">
+              <span class="price-currency">USD</span>
+              <span class="price-value">$30.14</span>
+            </div>
+            <div class="price-chip">
+              <span class="price-currency">EUR</span>
+              <span class="price-value">&euro;25.19</span>
+            </div>
+          </div>
+
+          <div class="stats-row">
+            <span class="demand-badge demand-high">High Demand</span>
+            <span>2 for sale</span>
+            <span>3 have &middot; 6 want</span>
+          </div>
+
+          <div class="result-actions">
+            <button class="btn-save">Save to Collection</button>
+            <a href="#" class="btn-discogs">View on Discogs &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- COLLECTION -->
+<section id="collection">
+  <div class="container">
+    <div class="collection-header">
+      <div>
+        <h2>Collection</h2>
+        <p class="collection-count">6 records saved</p>
+      </div>
+      <div class="sort-controls">
+        <span class="sort-label">Sort</span>
+        <button class="sort-btn active">Date</button>
+        <button class="sort-btn">Price</button>
+        <button class="sort-btn">Demand</button>
+      </div>
+    </div>
+
+    <div class="collection-grid">
+      <div class="record-card">
+        <div class="record-card-cover">
+          <img src="https://i.discogs.com/WK0Rz8MjNgqbEwrOoZzRvUhxIVc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4536214-1367623820-4293.jpeg.jpg" alt="">
+        </div>
+        <div class="record-card-body">
+          <div class="record-card-artist">La Sonora Dinamita</div>
+          <div class="record-card-album">Cumbia Sin Fronteras</div>
+          <div class="record-card-footer">
+            <span class="record-card-price">$519 MXN</span>
+            <span class="badge-sm demand-high">High</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="record-card">
+        <div class="record-card-cover">
+          <img src="https://i.discogs.com/J8N4G1JTwDwiYQ7bGsQ__4F6fIk=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-3876771-1507898048-3389.jpeg.jpg" alt="">
+        </div>
+        <div class="record-card-body">
+          <div class="record-card-artist">Bronco</div>
+          <div class="record-card-album">Amigo</div>
+          <div class="record-card-footer">
+            <span class="record-card-price">$350 MXN</span>
+            <span class="badge-sm demand-good">Good</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="record-card">
+        <div class="record-card-cover">
+          <img src="https://i.discogs.com/GqxIMqKv2fEW_b17c6L2e86dlBg=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-4869625-1378147289-5752.jpeg.jpg" alt="">
+        </div>
+        <div class="record-card-body">
+          <div class="record-card-artist">Selena</div>
+          <div class="record-card-album">Amor Prohibido</div>
+          <div class="record-card-footer">
+            <span class="record-card-price">$2,400 MXN</span>
+            <span class="badge-sm demand-high">High</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="record-card">
+        <div class="record-card-cover">
+          <img src="https://i.discogs.com/1k6FDvPPqFmLk2ItXB_bsIGBbXA=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-1831538-1358605149-2291.jpeg.jpg" alt="">
+        </div>
+        <div class="record-card-body">
+          <div class="record-card-artist">Los Bukis</div>
+          <div class="record-card-album">A Donde Vas</div>
+          <div class="record-card-footer">
+            <span class="record-card-price">$280 MXN</span>
+            <span class="badge-sm demand-medium">Med</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="record-card">
+        <div class="record-card-cover">
+          <img src="https://i.discogs.com/9wphiUlEJnWJhHdyVFzF0h1pLk0=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-7070025-1433073973-3593.jpeg.jpg" alt="">
+        </div>
+        <div class="record-card-body">
+          <div class="record-card-artist">Celso Pi&ntilde;a</div>
+          <div class="record-card-album">Barrio Bravo</div>
+          <div class="record-card-footer">
+            <span class="record-card-price">$180 MXN</span>
+            <span class="badge-sm demand-good">Good</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="record-card">
+        <div class="record-card-cover">
+          <img src="https://i.discogs.com/kxLJ-4O8sQ2cQEBHE-6b_-GqHvc=/fit-in/600x600/filters:strip_icc():format(jpeg):mode_rgb():quality(90)/discogs-images/R-2459505-1285357293.jpeg.jpg" alt="">
+        </div>
+        <div class="record-card-body">
+          <div class="record-card-artist">Los &Aacute;ngeles Azules</div>
+          <div class="record-card-album">C&oacute;mo Te Voy a Olvidar</div>
+          <div class="record-card-footer">
+            <span class="record-card-price">$420 MXN</span>
+            <span class="badge-sm demand-high">High</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">Built with Claude Code &middot; Powered by Discogs</div>
+</footer>
+
+</body>
+</html>
